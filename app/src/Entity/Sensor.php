@@ -128,12 +128,12 @@ class Sensor
         return $this;
     }
 
-    public function removeTemprature(Measurement $temprature): static
+    public function removeMeasurement(Measurement $measurement): static
     {
-        if ($this->temprature->removeElement($temprature)) {
+        if ($this->measurements->removeElement($measurement)) {
             // set the owning side to null (unless already changed)
-            if ($temprature->getSensor() === $this) {
-                $temprature->setSensor(null);
+            if ($measurement->getSensor() === $this) {
+                $measurement->setSensor(null);
             }
         }
 

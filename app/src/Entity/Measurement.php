@@ -19,7 +19,7 @@ class Measurement
     private ?Sensor $sensor = null;
 
     #[ORM\Column]
-    private ?float $temprature = null;
+    private ?float $temperature = null;
 
     #[ORM\Column]
     private ?float $humidity = null;
@@ -54,12 +54,12 @@ class Measurement
     
     public function getTemprature(): ?float
     {
-        return $this->temprature;
+        return $this->temperature;
     }
 
     public function setTemprature(float $temprature): static
     {
-        $this->temprature = $temprature;
+        $this->temperature = $temprature;
 
         return $this;
     }
