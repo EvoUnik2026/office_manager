@@ -52,9 +52,6 @@
 /.web-server-pid
 /.history/
 
-.git
-docker/mosquitto/data
-docker/mosquitto/log
 **/var
 **/vendor
 **/.env.local
