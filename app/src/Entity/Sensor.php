@@ -15,7 +15,7 @@ class Sensor
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 100)]
+    #[ORM\Column(length: 100, unique: true)]
     private ?string $deviceId = null;
 
     #[ORM\Column(length: 150)]

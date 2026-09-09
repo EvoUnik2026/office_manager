@@ -55,3 +55,4 @@
 **/var
 **/vendor
 **/.env.local
+/docker/mosquitto/data/mosquitto.db
