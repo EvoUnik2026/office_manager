@@ -76,7 +76,7 @@ services:
       - iot
 
   traefik:
-    image: traefik:v3.5
+    image: traefik:v3.6.2
     container_name: iot_traefik
     command:
       - "--api.dashboard=true"
