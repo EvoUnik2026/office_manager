@@ -2,10 +2,12 @@
 
 namespace App\Entity;
 
-use App\Repository\SensorRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use App\Entity\Measurement;
 
-#[ORM\Entity(repositoryClass: SensorRepository::class)]
+#[ORM\Entity]
 class Sensor
 {
     #[ORM\Id]
@@ -28,12 +30,19 @@ class Sensor
     #[ORM\Column]
     private ?\DateTimeImmutable $updatedAt = null;
 
+    /**
+     * @var Collection<int, Measurement>
+     */
+    #[ORM\OneToMany(targetEntity: Measurement::class, mappedBy: 'sensor')]
+    private Collection $measurements;
+
     public function __construct()
     {
         $now = new \DateTimeImmutable();
 
         $this->createdAt = $now;
         $this->updatedAt = $now;
+        $this->measurements = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -97,6 +106,36 @@ class Sensor
     public function setUpdatedAt(\DateTimeImmutable $updatedAt): static
     {
         $this->updatedAt = $updatedAt;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Measurement>
+     */
+    public function getMeasurements(): Collection
+    {
+        return $this->measurements;
+    }
+
+    public function addMeasurement(Measurement $measurement): static
+    {
+        if (!$this->measurements->contains($measurement)) {
+            $this->measurements->add($measurement);
+            $measurement->setSensor($this);
+        }
+
+        return $this;
+    }
+
+    public function removeTemprature(Measurement $temprature): static
+    {
+        if ($this->temprature->removeElement($temprature)) {
+            // set the owning side to null (unless already changed)
+            if ($temprature->getSensor() === $this) {
+                $temprature->setSensor(null);
+            }
+        }
 
         return $this;
     }
