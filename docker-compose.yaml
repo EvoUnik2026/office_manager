@@ -69,9 +69,15 @@ services:
     container_name: iot_mqtt_simulator
     depends_on:
       - mosquitto
+      - mariadb
     environment:
       MQTT_HOST: mosquitto
       MQTT_PORT: 1883
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
     networks:
       - iot
 
