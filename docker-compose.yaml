@@ -8,6 +8,7 @@ services:
     working_dir: /var/www/html
     volumes:
       - ./app:/var/www/html
+      - symfony_cache:/var/www/html/var/cache
     networks:
       - iot
 
@@ -104,3 +105,4 @@ networks:
 
 volumes:
   mariadb_data:
+  symfony_cache:

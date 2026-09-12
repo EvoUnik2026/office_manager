@@ -52,12 +52,12 @@ class Measurement
         return $this;
     }
     
-    public function getTemprature(): ?float
+    public function getTemperature(): ?float
     {
         return $this->temperature;
     }
 
-    public function setTemprature(float $temprature): static
+    public function setTemperature(float $temprature): static
     {
         $this->temperature = $temprature;
 
