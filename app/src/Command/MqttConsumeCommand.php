@@ -2,31 +2,61 @@
 
 namespace App\Command;
 
+use App\Application\Measurement\MeasurementProcessor;
 use PhpMqtt\Client\ConnectionSettings;
 use PhpMqtt\Client\MqttClient;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Command\SignalableCommandInterface;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
-    name: 'app:mqtt:consume',
+    name: 'app:mqtt-consume',
     description: 'Consumes IoT measurements from the MQTT broker',
 )]
-class MqttConsumeCommand extends Command
+class MqttConsumeCommand extends Command implements SignalableCommandInterface
 {
+    private ?MqttClient $mqtt = null;
+    private ?SymfonyStyle $io = null;
+
+    public function __construct(
+        private MeasurementProcessor $measurementProcessor,
+    ) {
+        parent::__construct();
+    }
+
+    public function getSubscribedSignals(): array
+    {
+        return [\SIGTERM, \SIGINT];
+    }
+
+    public function handleSignal(int $signal, int|false $previousExitCode = 0): int|false
+    {
+        $this->io?->warning(sprintf(
+            'Received signal %d, requesting graceful shutdown...',
+            $signal
+        ));
+
+        $this->measurementProcessor->requestShutdown();
+        $this->mqtt?->interrupt();
+
+        return false;
+    }
+
     protected function execute(
         InputInterface $input,
         OutputInterface $output
     ): int {
-        $io = new SymfonyStyle($input, $output);
+        $this->io = new SymfonyStyle($input, $output);
 
         $host = 'mosquitto';
         $port = 1883;
         $clientId = 'symfony-consumer';
+        $topic = 'iot/device/+/measurement';
 
-        $mqtt = new MqttClient(
+        $this->mqtt = new MqttClient(
             $host,
             $port,
             $clientId
@@ -34,36 +64,79 @@ class MqttConsumeCommand extends Command
 
         $connectionSettings = new ConnectionSettings();
 
-        $io->info(sprintf(
+        $this->io->info(sprintf(
             'Connecting to MQTT broker %s:%d...',
             $host,
             $port
         ));
 
-        $mqtt->connect($connectionSettings, true);
+        $this->mqtt->connect($connectionSettings, true);
 
-        $io->success('Connected to MQTT broker.');
+        $this->io->success('Connected to MQTT broker.');
 
-        $topic = 'iot/device/+/measurement';
-
-        $mqtt->subscribe(
+        $this->mqtt->subscribe(
             $topic,
-            function (string $topic, string $message) use ($io): void {
-                $io->writeln(sprintf(
-                    '[MQTT] %s',
-                    $message
-                ));
+            function (string $topic, string $message): void {
+                if ($this->measurementProcessor->isShutdownRequested()) {
+                    return;
+                }
+
+                $this->io?->writeln(sprintf('[MQTT] %s', $message));
+
+                $data = json_decode($message, true);
+
+                if (!is_array($data)) {
+                    $this->io?->warning(sprintf(
+                        'Ignoring non-JSON MQTT payload on topic %s.',
+                        $topic
+                    ));
+
+                    return;
+                }
+
+                $this->measurementProcessor->process($data);
             },
             0
         );
 
-        $io->success(sprintf(
+        $this->io->success(sprintf(
             'Subscribed to topic: %s',
             $topic
         ));
 
-        $mqtt->loop(true);
+        try {
+            $this->mqtt->loop(true);
+        } finally {
+            $this->disconnectCleanly($topic);
+        }
+
+        $this->io->success('MQTT consumer stopped.');
 
         return Command::SUCCESS;
+    }
+
+    private function disconnectCleanly(string $topic): void
+    {
+        if ($this->mqtt === null) {
+            return;
+        }
+
+        try {
+            $this->mqtt->unsubscribe($topic);
+        } catch (\Throwable $exception) {
+            $this->io?->warning(sprintf(
+                'Could not unsubscribe from MQTT topic: %s',
+                $exception->getMessage()
+            ));
+        }
+
+        try {
+            $this->mqtt->disconnect();
+        } catch (\Throwable $exception) {
+            $this->io?->warning(sprintf(
+                'Could not disconnect from MQTT broker: %s',
+                $exception->getMessage()
+            ));
+        }
     }
 }

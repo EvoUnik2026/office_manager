@@ -9,11 +9,31 @@ use Psr\Log\LoggerInterface;
 
 class MeasurementProcessor
 {
+    private bool $shutdownRequested = false;
+
     public function __construct(
         private SensorRepository $sensorRepository,
         private EntityManagerInterface $entityManager,
         private LoggerInterface $logger,
     ) {
+    }
+
+    public function requestShutdown(): void
+    {
+        if ($this->shutdownRequested) {
+            return;
+        }
+
+        $this->shutdownRequested = true;
+
+        $this->logger->info(
+            'Measurement processor shutdown requested.'
+        );
+    }
+
+    public function isShutdownRequested(): bool
+    {
+        return $this->shutdownRequested;
     }
 
     /**
@@ -22,6 +42,15 @@ class MeasurementProcessor
      */
     public function process(array $data): void
     {
+        if ($this->shutdownRequested) {
+            $this->logger->info(
+                'Skipping MQTT measurement because shutdown was requested.',
+                ['payload' => $data]
+            );
+
+            return;
+        }
+
         $deviceId = $data['device_id'] ?? null;
 
         if (!is_string($deviceId) || $deviceId === '') {
