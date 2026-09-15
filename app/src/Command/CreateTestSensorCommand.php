@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Command;
 
 use App\Entity\Sensor;
@@ -25,7 +27,7 @@ class CreateTestSensorCommand extends Command
 
     protected function execute(
         InputInterface $input,
-        OutputInterface $output
+        OutputInterface $output,
     ): int {
         $io = new SymfonyStyle($input, $output);
 
@@ -38,7 +40,7 @@ class CreateTestSensorCommand extends Command
 
         $measurement = new Measurement();
 
-        $measurement->setTemprature(22.5);
+        $measurement->setTemperature(22.5);
         $measurement->setHumidity(48.5);
         $measurement->setMeasuredAt(new \DateTimeImmutable());
 
@@ -52,7 +54,7 @@ class CreateTestSensorCommand extends Command
         $io->success(sprintf(
             'Sensor #%d with measurement #%d created successfully.',
             $sensor->getId(),
-            $measurement->getId()
+            $measurement->getId(),
         ));
 
         return Command::SUCCESS;

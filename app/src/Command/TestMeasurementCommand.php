@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Command;
 
+use App\Application\Measurement\MeasurementPayloadValidator;
 use App\Application\Measurement\MeasurementProcessor;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -17,13 +20,14 @@ class TestMeasurementCommand extends Command
 {
     public function __construct(
         private MeasurementProcessor $measurementProcessor,
+        private MeasurementPayloadValidator $measurementPayloadValidator,
     ) {
         parent::__construct();
     }
 
     protected function execute(
         InputInterface $input,
-        OutputInterface $output
+        OutputInterface $output,
     ): int {
         $io = new SymfonyStyle($input, $output);
 
@@ -35,9 +39,10 @@ class TestMeasurementCommand extends Command
         ];
 
         $io->info('Processing test measurement...');
-        $io->text(json_encode($payload, JSON_PRETTY_PRINT));
+        $io->text(json_encode($payload, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR));
 
-        $this->measurementProcessor->process($payload);
+        $measurementPayload = $this->measurementPayloadValidator->validate($payload);
+        $this->measurementProcessor->process($measurementPayload);
 
         $io->success('Measurement processed successfully.');
 

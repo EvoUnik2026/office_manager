@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Application\Measurement;
 
 use App\Entity\Measurement;
@@ -15,8 +17,7 @@ class MeasurementProcessor
         private SensorRepository $sensorRepository,
         private EntityManagerInterface $entityManager,
         private LoggerInterface $logger,
-    ) {
-    }
+    ) {}
 
     public function requestShutdown(): void
     {
@@ -27,7 +28,7 @@ class MeasurementProcessor
         $this->shutdownRequested = true;
 
         $this->logger->info(
-            'Measurement processor shutdown requested.'
+            'Measurement processor shutdown requested.',
         );
     }
 
@@ -36,59 +37,29 @@ class MeasurementProcessor
         return $this->shutdownRequested;
     }
 
-    /**
-     *
-     * @param array<string, mixed> $data
-     */
-    public function process(array $data): void
+    public function process(MeasurementPayload $payload): void
     {
         if ($this->shutdownRequested) {
             $this->logger->info(
                 'Skipping MQTT measurement because shutdown was requested.',
-                ['payload' => $data]
-            );
-
-            return;
-        }
-
-        $deviceId = $data['device_id'] ?? null;
-
-        if (!is_string($deviceId) || $deviceId === '') {
-            $this->logger->warning(
-                'Ignoring MQTT measurement without a valid device_id.',
-                ['payload' => $data]
+                [
+                    'device_id' => $payload->deviceId,
+                ],
             );
 
             return;
         }
 
         $sensor = $this->sensorRepository->findOneBy([
-            'deviceId' => $deviceId,
+            'deviceId' => $payload->deviceId,
         ]);
 
-        if ($sensor === null) {
+        if (null === $sensor) {
             $this->logger->warning(
                 'Ignoring MQTT measurement from unknown device.',
-                ['device_id' => $deviceId]
-            );
-
-            return;
-        }
-
-        if (
-            !isset($data['temperature']) ||
-            !is_numeric($data['temperature']) ||
-            !isset($data['humidity']) ||
-            !is_numeric($data['humidity']) ||
-            !isset($data['timestamp']) ||
-            !is_numeric($data['timestamp'])
-        ) {
-            $this->logger->warning(
-                'Ignoring invalid MQTT measurement.',
                 [
-                    'device_id' => $deviceId,
-                    'payload' => $data,
-                ]
+                    'device_id' => $payload->deviceId,
+                ],
             );
 
             return;
@@ -97,13 +68,9 @@ class MeasurementProcessor
         $measurement = new Measurement();
 
         $measurement
-            ->setTemperature((float) $data['temperature'])
-            ->setHumidity((float) $data['humidity'])
-            ->setMeasuredAt(
-                (new \DateTimeImmutable())->setTimestamp(
-                    (int) $data['timestamp']
-                )
-            );
+            ->setTemperature($payload->temperature)
+            ->setHumidity($payload->humidity)
+            ->setMeasuredAt($payload->measuredAt);
 
         $sensor->addMeasurement($measurement);
 
@@ -113,10 +80,10 @@ class MeasurementProcessor
         $this->logger->info(
             'MQTT measurement stored.',
             [
-                'device_id' => $deviceId,
+                'device_id' => $payload->deviceId,
                 'temperature' => $measurement->getTemperature(),
                 'humidity' => $measurement->getHumidity(),
-            ]
+            ],
         );
     }
 }

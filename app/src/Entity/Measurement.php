@@ -1,9 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity;
 
 use App\Repository\MeasurementRepository;
-use App\Entity\Sensor;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: MeasurementRepository::class)]
@@ -51,7 +52,7 @@ class Measurement
 
         return $this;
     }
-    
+
     public function getTemperature(): ?float
     {
         return $this->temperature;

@@ -1,10 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Command;
 
 use App\Application\Measurement\MeasurementProcessor;
 use PhpMqtt\Client\ConnectionSettings;
 use PhpMqtt\Client\MqttClient;
+use App\Application\Measurement\MeasurementPayloadValidator;
+use App\Application\Measurement\InvalidMeasurementPayloadException;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Command\SignalableCommandInterface;
@@ -23,10 +27,14 @@ class MqttConsumeCommand extends Command implements SignalableCommandInterface
 
     public function __construct(
         private MeasurementProcessor $measurementProcessor,
+        private MeasurementPayloadValidator $measurementPayloadValidator,
     ) {
         parent::__construct();
     }
 
+    /**
+     * @return array<int>
+     */
     public function getSubscribedSignals(): array
     {
         return [\SIGTERM, \SIGINT];
@@ -36,7 +44,7 @@ class MqttConsumeCommand extends Command implements SignalableCommandInterface
     {
         $this->io?->warning(sprintf(
             'Received signal %d, requesting graceful shutdown...',
-            $signal
+            $signal,
         ));
 
         $this->measurementProcessor->requestShutdown();
@@ -47,9 +55,10 @@ class MqttConsumeCommand extends Command implements SignalableCommandInterface
 
     protected function execute(
         InputInterface $input,
-        OutputInterface $output
+        OutputInterface $output,
     ): int {
-        $this->io = new SymfonyStyle($input, $output);
+        $io = new SymfonyStyle($input, $output);
+        $this->io = $io;
 
         $host = 'mosquitto';
         $port = 1883;
@@ -59,20 +68,20 @@ class MqttConsumeCommand extends Command implements SignalableCommandInterface
         $this->mqtt = new MqttClient(
             $host,
             $port,
-            $clientId
+            $clientId,
         );
 
         $connectionSettings = new ConnectionSettings();
 
-        $this->io->info(sprintf(
+        $io->info(sprintf(
             'Connecting to MQTT broker %s:%d...',
             $host,
-            $port
+            $port,
         ));
 
         $this->mqtt->connect($connectionSettings, true);
 
-        $this->io->success('Connected to MQTT broker.');
+        $io->success('Connected to MQTT broker.');
 
         $this->mqtt->subscribe(
             $topic,
@@ -94,14 +103,26 @@ class MqttConsumeCommand extends Command implements SignalableCommandInterface
                     return;
                 }
 
-                $this->measurementProcessor->process($data);
+                try {
+                    $payload = $this->measurementPayloadValidator->validate($data);
+
+                    $this->measurementProcessor->process($payload);
+                } catch (InvalidMeasurementPayloadException $exception) {
+                    $this->io?->warning(sprintf(
+                        'Ignoring invalid MQTT measurement on topic %s: %s',
+                        $topic,
+                        $exception->getMessage()
+                    ));
+
+                    return;
+                }
             },
-            0
+            0,
         );
 
-        $this->io->success(sprintf(
+        $io->success(sprintf(
             'Subscribed to topic: %s',
-            $topic
+            $topic,
         ));
 
         try {
@@ -110,14 +131,14 @@ class MqttConsumeCommand extends Command implements SignalableCommandInterface
             $this->disconnectCleanly($topic);
         }
 
-        $this->io->success('MQTT consumer stopped.');
+        $io->success('MQTT consumer stopped.');
 
         return Command::SUCCESS;
     }
 
     private function disconnectCleanly(string $topic): void
     {
-        if ($this->mqtt === null) {
+        if (null === $this->mqtt) {
             return;
         }
 
@@ -126,7 +147,7 @@ class MqttConsumeCommand extends Command implements SignalableCommandInterface
         } catch (\Throwable $exception) {
             $this->io?->warning(sprintf(
                 'Could not unsubscribe from MQTT topic: %s',
-                $exception->getMessage()
+                $exception->getMessage(),
             ));
         }
 
@@ -135,7 +156,7 @@ class MqttConsumeCommand extends Command implements SignalableCommandInterface
         } catch (\Throwable $exception) {
             $this->io?->warning(sprintf(
                 'Could not disconnect from MQTT broker: %s',
-                $exception->getMessage()
+                $exception->getMessage(),
             ));
         }
     }
