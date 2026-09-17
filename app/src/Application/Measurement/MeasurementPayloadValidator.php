@@ -61,7 +61,7 @@ final class MeasurementPayloadValidator
     {
         $unexpectedFields = array_diff(array_keys($data), self::ALLOWED_FIELDS);
 
-        if ($unexpectedFields !== []) {
+        if ([] !== $unexpectedFields) {
             throw new InvalidMeasurementPayloadException(sprintf('Measurement payload contains unexpected field(s): %s.', implode(', ', $unexpectedFields)), $data);
         }
 
@@ -76,9 +76,9 @@ final class MeasurementPayloadValidator
         }
 
         if (
-            !isset($data['timestamp']) ||
-            !is_numeric($data['timestamp']) ||
-            0.0 !== fmod((float) $data['timestamp'], 1.0)
+            !isset($data['timestamp'])
+            || !is_numeric($data['timestamp'])
+            || 0.0 !== fmod((float) $data['timestamp'], 1.0)
         ) {
             throw new InvalidMeasurementPayloadException('Measurement payload is missing a valid whole-number "timestamp".', $data);
         }

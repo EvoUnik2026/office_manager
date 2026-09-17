@@ -32,11 +32,6 @@ class MeasurementProcessor
         );
     }
 
-    public function isShutdownRequested(): bool
-    {
-        return $this->shutdownRequested;
-    }
-
     public function process(MeasurementPayload $payload): void
     {
         if ($this->shutdownRequested) {

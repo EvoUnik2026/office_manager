@@ -56,3 +56,4 @@
 **/vendor
 **/.env.local
 /docker/mosquitto/data/mosquitto.db
+docker/mosquitto/data/mosquitto.db

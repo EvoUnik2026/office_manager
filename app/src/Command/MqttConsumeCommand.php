@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Command;
 
+use App\Application\Measurement\InvalidMeasurementPayloadException;
+use App\Application\Measurement\MeasurementPayloadValidator;
 use App\Application\Measurement\MeasurementProcessor;
 use PhpMqtt\Client\ConnectionSettings;
 use PhpMqtt\Client\MqttClient;
-use App\Application\Measurement\MeasurementPayloadValidator;
-use App\Application\Measurement\InvalidMeasurementPayloadException;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Command\SignalableCommandInterface;
@@ -86,10 +86,6 @@ class MqttConsumeCommand extends Command implements SignalableCommandInterface
         $this->mqtt->subscribe(
             $topic,
             function (string $topic, string $message): void {
-                if ($this->measurementProcessor->isShutdownRequested()) {
-                    return;
-                }
-
                 $this->io?->writeln(sprintf('[MQTT] %s', $message));
 
                 $data = json_decode($message, true);
@@ -97,7 +93,7 @@ class MqttConsumeCommand extends Command implements SignalableCommandInterface
                 if (!is_array($data)) {
                     $this->io?->warning(sprintf(
                         'Ignoring non-JSON MQTT payload on topic %s.',
-                        $topic
+                        $topic,
                     ));
 
                     return;
@@ -111,7 +107,7 @@ class MqttConsumeCommand extends Command implements SignalableCommandInterface
                     $this->io?->warning(sprintf(
                         'Ignoring invalid MQTT measurement on topic %s: %s',
                         $topic,
-                        $exception->getMessage()
+                        $exception->getMessage(),
                     ));
 
                     return;

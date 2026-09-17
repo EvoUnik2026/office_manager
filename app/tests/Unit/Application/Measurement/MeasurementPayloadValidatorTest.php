@@ -79,7 +79,7 @@ final class MeasurementPayloadValidatorTest extends TestCase
         } catch (InvalidMeasurementPayloadException $exception) {
             self::assertStringContainsString(
                 'unexpected',
-                strtolower($exception->getMessage())
+                strtolower($exception->getMessage()),
             );
         }
     }
