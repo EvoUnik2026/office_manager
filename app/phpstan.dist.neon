@@ -1,0 +1,12 @@
+parameters:
+    level: 8
+    paths:
+        - src
+        - tests
+    tmpDir: var/cache/phpstan
+    ignoreErrors:
+        -
+            # Doctrine assigns generated IDs via reflection at runtime, invisible to PHPStan's static flow analysis.
+            identifier: property.unusedType
+            message: '#\$id \(int\|null\) is never assigned int#'
+            path: src/Entity/*

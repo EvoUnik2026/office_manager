@@ -1,9 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity;
 
 use App\Repository\MeasurementRepository;
-use App\Entity\Sensor;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: MeasurementRepository::class)]
@@ -19,7 +20,7 @@ class Measurement
     private ?Sensor $sensor = null;
 
     #[ORM\Column]
-    private ?float $temprature = null;
+    private ?float $temperature = null;
 
     #[ORM\Column]
     private ?float $humidity = null;
@@ -51,15 +52,15 @@ class Measurement
 
         return $this;
     }
-    
-    public function getTemprature(): ?float
+
+    public function getTemperature(): ?float
     {
-        return $this->temprature;
+        return $this->temperature;
     }
 
-    public function setTemprature(float $temprature): static
+    public function setTemperature(float $temprature): static
     {
-        $this->temprature = $temprature;
+        $this->temperature = $temprature;
 
         return $this;
     }

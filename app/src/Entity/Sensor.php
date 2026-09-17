@@ -1,11 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity;
 
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
-use App\Entity\Measurement;
 
 #[ORM\Entity]
 class Sensor
@@ -15,7 +16,7 @@ class Sensor
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 100)]
+    #[ORM\Column(length: 100, unique: true)]
     private ?string $deviceId = null;
 
     #[ORM\Column(length: 150)]
@@ -128,12 +129,12 @@ class Sensor
         return $this;
     }
 
-    public function removeTemprature(Measurement $temprature): static
+    public function removeMeasurement(Measurement $measurement): static
     {
-        if ($this->temprature->removeElement($temprature)) {
+        if ($this->measurements->removeElement($measurement)) {
             // set the owning side to null (unless already changed)
-            if ($temprature->getSensor() === $this) {
-                $temprature->setSensor(null);
+            if ($measurement->getSensor() === $this) {
+                $measurement->setSensor(null);
             }
         }
 
