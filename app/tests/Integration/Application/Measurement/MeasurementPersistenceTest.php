@@ -7,6 +7,7 @@ namespace App\Tests\Integration\Application\Measurement;
 use App\Application\Measurement\MeasurementPayload;
 use App\Application\Measurement\MeasurementProcessor;
 use App\Entity\Sensor;
+use App\Domain\Monitoring\SensorStatus;
 use App\Repository\MeasurementRepository;
 use App\Tests\Integration\IntegrationTestCase;
 
@@ -55,6 +56,29 @@ final class MeasurementPersistenceTest extends IntegrationTestCase
             ->fetchOne('SELECT COUNT(*) FROM measurement');
 
         self::assertSame(0, $measurementCount);
+    }
+
+    public function testNewSensorDefaultsToInactiveAndPersistsStatus(): void
+    {
+        $sensor = (new Sensor())
+            ->setDeviceId('integration-inactive-sensor')
+            ->setName('Inactive Integration Sensor')
+            ->setType('temperature_humidity');
+
+        self::assertSame(SensorStatus::Inactive, $sensor->getStatus());
+
+        $this->entityManager->persist($sensor);
+        $this->entityManager->flush();
+
+        $sensorId = $sensor->getId();
+        self::assertNotNull($sensorId);
+
+        $this->entityManager->clear();
+
+        $reloadedSensor = $this->entityManager->find(Sensor::class, $sensorId);
+
+        self::assertInstanceOf(Sensor::class, $reloadedSensor);
+        self::assertSame(SensorStatus::Inactive, $reloadedSensor->getStatus());
     }
 
     private function createPayload(string $deviceId): MeasurementPayload

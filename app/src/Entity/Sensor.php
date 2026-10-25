@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Domain\Monitoring\SensorStatus;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -24,6 +25,9 @@ class Sensor
 
     #[ORM\Column(length: 50)]
     private ?string $type = null;
+
+    #[ORM\Column(length: 20, enumType: SensorStatus::class, options: ['default' => 'ACTIVE'])]
+    private SensorStatus $status = SensorStatus::Inactive;
 
     #[ORM\Column]
     private ?\DateTimeImmutable $createdAt = null;
@@ -83,6 +87,18 @@ class Sensor
     public function setType(string $type): static
     {
         $this->type = $type;
+
+        return $this;
+    }
+
+    public function getStatus(): SensorStatus
+    {
+        return $this->status;
+    }
+
+    public function setStatus(SensorStatus $status): static
+    {
+        $this->status = $status;
 
         return $this;
     }
