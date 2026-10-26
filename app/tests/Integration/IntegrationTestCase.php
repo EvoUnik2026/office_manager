@@ -35,6 +35,7 @@ abstract class IntegrationTestCase extends KernelTestCase
 
         $connection->executeStatement('DELETE FROM measurement');
         $connection->executeStatement('DELETE FROM sensor');
+        $connection->executeStatement('DELETE FROM company');
 
         $connection->executeStatement('SET FOREIGN_KEY_CHECKS = 1');
     }
