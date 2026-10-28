@@ -1,0 +1,104 @@
+# Quality gate workflow.
+#
+# Runs the project's configured quality checks on every push/PR:
+#  - PHP-CS-Fixer dry-run (coding standards)
+#  - PHPStan level 8 (static analysis)
+#  - PHPUnit unit + integration suites
+#
+# Integration tests use the MariaDB service through the host-mapped loopback
+# port because this job runs directly on the GitHub-hosted runner.
+
+name: Quality Gates
+
+on:
+    push:
+        branches: [ "main", "database_and_repository" ]
+    pull_request:
+        branches: [ "main", "database_and_repository" ]
+
+env:
+    PHP_VERSION: "8.5"
+
+jobs:
+    quality:
+        name: Coding standards + static analysis
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: ${{ env.PHP_VERSION }}
+                  tools: composer:v2
+
+            - name: Certify Composer dependencies
+              run: composer validate --strict
+
+            - name: Install application dependencies
+              run: composer install --no-interaction --no-progress --prefer-dist
+              working-directory: app
+
+            - name: Validate application Composer manifest
+              run: composer validate --strict
+              working-directory: app
+
+            - name: Coding standards (PHP CS Fixer)
+              run: composer cs
+              working-directory: app
+
+            - name: Static analysis (PHPStan)
+              run: composer stan
+              working-directory: app
+
+    tests:
+        name: Unit and integration tests
+        runs-on: ubuntu-latest
+        env:
+            DATABASE_URL: "mysql://iot:iot_password@127.0.0.1:3306/iot?serverVersion=mariadb-11.4.0&charset=utf8mb4"
+        services:
+            mariadb:
+                image: mariadb:11.4
+                env:
+                    MARIADB_DATABASE: iot_test
+                    MARIADB_USER: iot
+                    MARIADB_PASSWORD: iot_password
+                    MARIADB_ROOT_PASSWORD: root_password
+                ports:
+                    - 3306:3306
+                options: >-
+                    --health-cmd="mysqladmin ping -h localhost"
+                    --health-interval=10s
+                    --health-timeout=5s
+                    --health-retries=5
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: ${{ env.PHP_VERSION }}
+                  tools: composer:v2
+
+            - name: Certify Composer dependencies
+              run: composer validate --strict
+
+            - name: Validate application Composer manifest
+              run: composer validate --strict
+              working-directory: app
+
+            - name: Install dependencies
+              run: composer install --no-interaction --no-progress --prefer-dist
+              working-directory: app
+
+            - name: Run unit tests
+              run: composer test:unit
+              working-directory: app
+
+            - name: Create test database schema
+              run: php bin/console doctrine:migrations:migrate --env=test --no-interaction
+              working-directory: app
+
+            - name: Run integration tests
+              run: composer test:integration
+              working-directory: app

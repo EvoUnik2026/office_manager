@@ -1,4 +1,6 @@
 {
+    "name": "evounik2026/office-manager",
+    "description": "Smart office and asset management platform built with Symfony.",
     "type": "project",
     "license": "proprietary",
     "minimum-stability": "stable",
@@ -17,6 +19,7 @@
         "symfony/framework-bundle": "7.4.*",
         "symfony/messenger": "7.4.*",
         "symfony/runtime": "7.4.*",
+        "symfony/uid": "7.4.*",
         "symfony/validator": "7.4.*",
         "symfony/yaml": "7.4.*"
     },

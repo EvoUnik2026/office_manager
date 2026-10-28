@@ -1,4 +1,7 @@
 {
+    "name": "evounik2026/office-manager-workspace",
+    "description": "Workspace-level Composer tooling for the office manager application.",
+    "license": "proprietary",
     "require-dev": {
         "symfony/maker-bundle": "^1.67"
     }
