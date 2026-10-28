@@ -7,25 +7,25 @@ namespace DoctrineMigrations;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 
-/**
- * Auto-generated Migration: Please modify to your needs!
- */
 final class Version20260911101439 extends AbstractMigration
 {
     public function getDescription(): string
     {
-        return '';
+        return 'No-op: the sensor device_id unique index is created by Version20260909101908.';
     }
 
     public function up(Schema $schema): void
     {
-        // this up() migration is auto-generated, please modify it to your needs
-        $this->addSql('CREATE UNIQUE INDEX UNIQ_BC8617B094A4C7D4 ON sensor (device_id)');
+        // Intentionally empty.
+        // Version20260909101908 already creates the unique index
+        // UNIQ_BC8617B094A4C7D4 on sensor.device_id.
     }
 
     public function down(Schema $schema): void
     {
-        // this down() migration is auto-generated, please modify it to your needs
-        $this->addSql('DROP INDEX UNIQ_BC8617B094A4C7D4 ON sensor');
+        // Intentionally empty.
+        // The index belongs to Version20260909101908.
+        // Dropping it here would leave the earlier migration applied
+        // while removing the index it owns.
     }
 }
